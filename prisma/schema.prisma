@@ -1,0 +1,80 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model User {
+  id           String    @id @default(cuid())
+  fullName     String
+  username     String
+  email        String    @unique
+  image        String?
+  passwordHash String
+  sessions     Session[]
+  member       Member?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Member {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  name              String
+  gender            String
+  dateOfbirth       DateTime
+  created           DateTime  @default(now())
+  updated           DateTime  @default(now())
+  description       String
+  city              String
+  country           String
+  image             String?
+  user              User      @relation(fields: [userId], references: [id])
+  sourceLikes       Likes[]   @relation("source")
+  targetLikes       Likes[]   @relation("target")
+  photo             Photo[]
+  senderMessages    Message[] @relation("sender")
+  recipientMessages Message[] @relation("recipient")
+}
+
+model Photo {
+  id       String @id @default(cuid())
+  url      String
+  publicId String
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+}
+
+model Likes {
+  id           String @id @default(cuid())
+  sourceUserId String
+  sourceMember Member @relation("source", fields: [sourceUserId], references: [userId])
+  targetUserId String
+  targetMember Member @relation("target", fields: [targetUserId], references: [userId])
+}
+
+model Message {
+  id               String    @id @default(cuid())
+  senderId         String?
+  recipientId      String?
+  text             String
+  date             DateTime  @default(now())
+  dateRead         DateTime?
+  sender           Member?   @relation("sender", fields: [senderId], references: [userId], onDelete: SetNull)
+  recipient        Member?   @relation("recipient", fields: [recipientId], references: [userId], onDelete: SetNull)
+  senderDeleted    Boolean   @default(false)
+  recipientDeleted Boolean   @default(false)
+}
